@@ -658,5 +658,169 @@ function exportToTSV() {
 // Boot up
 window.onload = initApp;
 </script>
+
+<!-- ===== 에덴 실시간 클라우드 진도 동기화 엔진 ===== -->
+<style>
+  #eden-sync-badge {
+    position: fixed;
+    bottom: 18px;
+    right: 18px;
+    background: rgba(20, 24, 33, 0.92);
+    color: #e2e8f0;
+    padding: 8px 14px;
+    border-radius: 30px;
+    font-size: 13px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    z-index: 99999;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(6px);
+  }
+  #eden-sync-badge.syncing { border-color: #38bdf8; color: #38bdf8; }
+  #eden-sync-badge.success { border-color: #4ade80; color: #4ade80; }
+  #eden-sync-badge.error { border-color: #f87171; color: #f87171; }
+</style>
+
+<div id="eden-sync-badge">🔄 구글 시트 연결 중...</div>
+
+<script>
+(function() {
+  const SYNC_URL = "https://script.google.com/macros/s/AKfycbyHvNZjepJ8iboyb7PEWRptnMOq_zrJPsvaAIGuNmIMX_QiEzTRFUu_m70r87eJRJ91JQ/exec";
+  const badge = document.getElementById('eden-sync-badge');
+  let isApplyingRemote = false;
+  let saveTimer = null;
+
+  function updateBadge(text, state) {
+    if (!badge) return;
+    badge.textContent = text;
+    badge.className = state || '';
+  }
+
+  function collectState() {
+    const localData = {};
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      localData[key] = localStorage.getItem(key);
+    }
+    const checkedList = [];
+    const allCheckboxes = document.querySelectorAll('input[type="checkbox"]');
+    allCheckboxes.forEach((cb, idx) => {
+      if (cb.checked) {
+        checkedList.push(cb.id || ('idx_' + idx));
+      }
+    });
+    return {
+      localStorage: localData,
+      checkedList: checkedList,
+      timestamp: Date.now()
+    };
+  }
+
+  function sendToCloud() {
+    if (isApplyingRemote) return;
+    updateBadge("☁️ 시트에 저장 중...", "syncing");
+    const payload = collectState();
+
+    fetch(SYNC_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(payload)
+    })
+    .then(() => {
+      updateBadge("☁️ 클라우드 저장 완료", "success");
+      setTimeout(() => updateBadge("✅ 동기화 됨", "success"), 2000);
+    })
+    .catch(err => {
+      console.error("동기화 실패:", err);
+      updateBadge("⚠️ 동기화 실패", "error");
+    });
+  }
+
+  function scheduleSave() {
+    if (isApplyingRemote) return;
+    clearTimeout(saveTimer);
+    updateBadge("✏️ 변경사항 감지...", "syncing");
+    saveTimer = setTimeout(sendToCloud, 800);
+  }
+
+  function loadFromCloud() {
+    updateBadge("🔄 진도 불러오는 중...", "syncing");
+
+    fetch(SYNC_URL)
+      .then(res => res.json())
+      .then(data => {
+        if (!data || Object.keys(data).length === 0 || (Array.isArray(data) && data.length === 0)) {
+          const current = collectState();
+          if (current.checkedList.length > 0 || Object.keys(current.localStorage).length > 0) {
+            updateBadge("☁️ PC 진도를 시트에 등록 중...", "syncing");
+            sendToCloud();
+          } else {
+            updateBadge("✅ 동기화 준비 완료", "success");
+          }
+          return;
+        }
+
+        isApplyingRemote = true;
+
+        if (data.localStorage) {
+          for (const [k, v] of Object.entries(data.localStorage)) {
+            try { localStorage.setItem(k, v); } catch(e) {}
+          }
+        }
+
+        if (data.checkedList) {
+          const checkedSet = new Set(data.checkedList);
+          const allCheckboxes = document.querySelectorAll('input[type="checkbox"]');
+          allCheckboxes.forEach((cb, idx) => {
+            const identifier = cb.id || ('idx_' + idx);
+            const shouldCheck = checkedSet.has(identifier);
+            if (cb.checked !== shouldCheck) {
+              cb.checked = shouldCheck;
+              cb.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+          });
+        }
+
+        if (typeof updateStats === 'function') updateStats();
+        if (typeof renderAll === 'function') renderAll();
+        if (typeof updateProgress === 'function') updateProgress();
+
+        setTimeout(() => {
+          isApplyingRemote = false;
+          updateBadge("✅ 동기화 완료", "success");
+        }, 500);
+      })
+      .catch(err => {
+        console.error("불러오기 오류:", err);
+        updateBadge("⚠️ 오프라인 모드", "error");
+      });
+  }
+
+  document.addEventListener('change', (e) => {
+    if (e.target.matches('input[type="checkbox"]')) {
+      scheduleSave();
+    }
+  });
+
+  const origSetItem = localStorage.setItem.bind(localStorage);
+  localStorage.setItem = function(k, v) {
+    origSetItem(k, v);
+    scheduleSave();
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', loadFromCloud);
+  } else {
+    setTimeout(loadFromCloud, 300);
+  }
+})();
+</script>
+<!-- ===== 에덴 실시간 클라우드 진도 동기화 엔진 끝 ===== -->
+
 </body>
 </html>
