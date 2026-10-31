@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 576 512' fill='%23198754'><path d='M249.6 471.5c10.8 3.8 22.4-4.1 22.4-15.5V78.6c0-9.3-5.6-17.5-14.2-20.8C210.2 40.1 144 32 80 32 35.8 32 0 67.8 0 112v288c0 35.3 28.7 64 64 64 54.3 0 113.8 14.7 185.6 39.5zM304 78.6v377.4c0 11.4 11.6 19.3 22.4 15.5 71.8-24.8 131.3-39.5 185.6-39.5 35.3 0 64-28.7 64-64V112c0-44.2-35.8-80-80-80-64 0-130.2 8.1-177.8 25.8-8.6 3.3-14.2 11.5-14.2 20.8z'/></svg>">
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌿 은하의 열공 진도 대시보드</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #fcfcfc;
+        }
+        /* Custom Scrollbar for Tabs */
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        /* Accordion transition */
+        .accordion-content {
+            transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out;
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+        }
+        .accordion-content.open {
+            max-height: 2000px; /* Large enough for content */
+            opacity: 1;
+        }
+        /* Circular Checkbox Custom */
+        .circle-check {
+            transition: all 0.2s ease;
+        }
+        .circle-check.checked {
+            background-color: #10B981; /* Emerald 500 */
+            border-color: #10B981;
+        }
+    </style>
+</head>
+<body class="text-gray-800 pb-20">
+
+    <!-- Top Navigation -->
+    <nav class="w-full max-w-7xl mx-auto px-6 py-4 flex justify-between items-center bg-white/80 backdrop-blur-md sticky top-0 z-50">
+        <div class="flex items-center gap-2">
+            <div class="text-green-700 text-2xl"><i class="fa-solid fa-book-open"></i></div>
+            <div>
+                <h1 class="font-bold text-xl leading-tight">은하의 열공 진도 대시보드 <span class="bg-yellow-100 text-yellow-800 text-xs px-2 py-0.5 rounded-full ml-1">에덴 서재 🌿</span></h1>
+                <p class="text-xs text-gray-500">한 걸음 한 걸음 쌓여가는 우리 은하의 빛나는 성취</p>
+           </div>
+        </div>
+        <div class="flex gap-2">
+            <!-- 1. 강의실 바로가기 버튼 (새 창 열기) -->
+            <a href="https://gumstart.sinjiwonedu.co.kr/s/mypage.php" target="_blank" rel="noopener noreferrer" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 shadow-sm">
+                <i class="fa-solid fa-graduation-cap"></i> 강의실 바로가기
+            </a>
+
+            <!-- 2. 기존 구글시트용 복사 버튼 -->
+            <button onclick="exportToTSV()" class="bg-green-700 hover:bg-green-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 shadow-sm">
+                <i class="fa-solid fa-download"></i> 구글시트용 복사 (TSV)
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Content Container -->
+    <main class="max-w-7xl mx-auto px-6 mt-4">
+        
+        <!-- Hero Section (Dark Theme) -->
+        <div class="bg-[#2a2a2a] text-white rounded-[2rem] p-8 shadow-xl flex flex-col lg:flex-row gap-8 items-center relative overflow-hidden">
+            <!-- Background Glow Effect -->
+            <div class="absolute top-0 right-0 w-64 h-64 bg-green-500/10 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
+            
+            <!-- Left: Greeting & Overall Progress -->
+            <div class="flex-1 w-full z-10">
+                <div class="inline-block bg-green-900/50 text-green-300 text-xs font-semibold px-3 py-1 rounded-full mb-4 border border-green-700/50">
+                    ● 전체 학습 진도율
+                </div>
+                <h2 class="text-3xl lg:text-4xl font-black mb-2 tracking-tight">오늘도 멋지게 달려온 우리 은하! ✨</h2>
+                <p class="text-gray-400 text-sm mb-8">10~15쪽씩 가벼운 호흡으로! 작은 체크 하나가 쌓여 기적을 만듭니다 ✨</p>
+                
+                <div class="flex justify-between items-end mb-2">
+                    <span class="text-sm font-medium text-gray-300">전체 누적 완료율</span>
+                    <span class="text-3xl font-bold text-green-400" id="globalPctText">0%</span>
+                </div>
+                <div class="w-full bg-gray-700 rounded-full h-2.5">
+                    <div id="globalProgressBar" class="bg-gradient-to-r from-green-500 to-emerald-400 h-2.5 rounded-full transition-all duration-700" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- Right: Metric Cards Grid -->
+            <div class="grid grid-cols-2 gap-4 w-full lg:w-auto min-w-[40%] z-10">
+                <div class="bg-[#3a3a3a] border border-[#4a4a4a] rounded-2xl p-5">
+                    <div class="text-gray-400 text-xs mb-1">완료한 소단원</div>
+                    <div class="text-2xl font-bold text-white mb-1" id="statUnits">0 <span class="text-sm text-gray-500 font-normal">/ 0개</span></div>
+                    <div class="text-[10px] text-green-400">10~15쪽 단위 성취</div>
+                </div>
+                <div class="bg-[#3a3a3a] border border-[#4a4a4a] rounded-2xl p-5">
+                    <div class="text-gray-400 text-xs mb-1">독파한 누적 페이지</div>
+                    <div class="text-2xl font-bold text-yellow-400 mb-1" id="statPages">0 <span class="text-sm text-gray-500 font-normal">쪽 돌파</span></div>
+                    <div class="text-[10px] text-yellow-200">차곡차곡 쌓인 지식</div>
+                </div>
+                <div class="bg-[#3a3a3a] border border-[#4a4a4a] rounded-2xl p-5">
+                    <div class="text-gray-400 text-xs mb-1">완주한 대단원</div>
+                    <div class="text-2xl font-bold text-blue-400 mb-1" id="statParts">0 <span class="text-sm text-gray-500 font-normal">/ 0단원</span></div>
+                    <div class="text-[10px] text-blue-200">40~50쪽 기둥 정복</div>
+                </div>
+                <div class="bg-[#3a3a3a] border border-[#4a4a4a] rounded-2xl p-5 flex flex-col justify-center">
+                    <div class="text-gray-400 text-xs mb-1">현재 선택 과목</div>
+                    <div class="text-xl font-bold text-white mb-1 truncate" id="statCurrentSubject">수학</div>
+                    <div class="text-[10px] text-gray-400" id="statCurrentProgress">진도율 0%</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Subject Tabs -->
+        <div class="flex items-center gap-3 overflow-x-auto hide-scrollbar py-6 border-b border-gray-100" id="tabsContainer">
+            <!-- Tabs rendered by JS -->
+        </div>
+
+        <!-- Action Bar for Current Subject -->
+        <div class="flex justify-between items-center py-6">
+            <div>
+                <h3 class="text-2xl font-bold flex items-center gap-3" id="currentSubjectTitle">
+                    수학 <span class="bg-green-100 text-green-700 text-sm px-3 py-1 rounded-full font-medium" id="currentSubjectBadge">진도율 0% (0/0)</span>
+                </h3>
+                <p class="text-gray-500 text-xs mt-1">대단원 안의 소단원을 완료할 때마다 체크박스를 클릭하세요.</p>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="toggleAllAccordions(true)" class="border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition">모두 펼치기</button>
+                <button onclick="toggleAllAccordions(false)" class="border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition">모두 접기</button>
+            </div>
+        </div>
+
+        <!-- Accordions Container -->
+        <div id="accordionsContainer" class="flex flex-col gap-4">
+            <!-- Accordions rendered by JS -->
+        </div>
+
+    </main>
+
+<script>
+/**
+ * 1. Data Structure (Complete 7 Subjects)
+ */
+const curriculumData = [
+    {
+        id: "sub1", name: "국어",
+        parts: [
+            { id: "s1p1", title: "PART 01 운문 문학", pageRange: "p.2~85", units: [
+                { id: "s1p1u1", title: "01 현대시", pages: 56 },
+                { id: "s1p1u2", title: "02 고전 시가", pages: 12 },
+                { id: "s1p1u3", title: "적중예상문제", pages: 16 }
+            ]},
+            { id: "s1p2", title: "PART 02 산문 문학", pageRange: "p.86~293", units: [
+                { id: "s1p2u1", title: "01 현대 소설", pages: 108 },
+                { id: "s1p2u2", title: "02 고전 소설", pages: 22 },
+                { id: "s1p2u3", title: "03 설화", pages: 7 },
+                { id: "s1p2u4", title: "04 수필, 설, 기행문", pages: 17 },
+                { id: "s1p2u5", title: "05 전기문", pages: 6 },
+                { id: "s1p2u6", title: "06 희곡, 시나리오", pages: 23 },
+                { id: "s1p2u7", title: "적중예상문제", pages: 25 }
+            ]},
+            { id: "s1p3", title: "PART 03 비문학", pageRange: "p.294~367", units: [
+                { id: "s1p3u1", title: "01 설명문", pages: 29 },
+                { id: "s1p3u2", title: "02 논설문", pages: 24 },
+                { id: "s1p3u3", title: "03 건의문", pages: 6 },
+                { id: "s1p3u4", title: "적중예상문제", pages: 15 }
+            ]},
+            { id: "s1p4", title: "PART 04 듣기, 말하기, 쓰기", pageRange: "p.368~389", units: [
+                { id: "s1p4u1", title: "01 듣기, 말하기", pages: 7 },
+                { id: "s1p4u2", title: "02 쓰기", pages: 8 },
+                { id: "s1p4u3", title: "적중예상문제", pages: 7 }
+            ]},
+            { id: "s1p5", title: "PART 05 문법", pageRange: "p.390~447", units: [
+                { id: "s1p5u1", title: "01 언어의 특성 외", pages: 18 },
+                { id: "s1p5u2", title: "02 문장 성분, 확장", pages: 15 },
+                { id: "s1p5u3", title: "03 어문 규범, 창제 원리", pages: 11 },
+                { id: "s1p5u4", title: "적중예상문제", pages: 7 }
+            ]},
+            { id: "s1p6", title: "PART 06 기출문제", pageRange: "p.448~", units: [
+                { id: "s1p6u1", title: "2026년 제1회 기출", pages: 20 }
+            ]}
+        ]
+    },
+    {
+        id: "sub2", name: "수학",
+        parts: [
+            { id: "s2p1", title: "01. 수와 연산", pageRange: "약 40쪽", units: [
+                { id: "s2p1u1", title: "01. 소인수분해와 최대공약수", pages: 6 },
+                { id: "s2p1u2", title: "02. 정수와 유리수의 사칙계산", pages: 10 },
+                { id: "s2p1u3", title: "03. 유리수와 순환소수, 제곱근", pages: 13 },
+                { id: "s2p1u4", title: "적중예상문제", pages: 11 }
+            ]},
+            { id: "s2p2", title: "02. 문자와 식", pageRange: "약 34쪽", units: [
+                { id: "s2p2u1", title: "01. 문자의 사용과 식의 계산", pages: 9 },
+                { id: "s2p2u2", title: "02. 다항식의 계산과 곱셈공식", pages: 8 },
+                { id: "s2p2u3", title: "03. 다항식의 인수분해", pages: 6 },
+                { id: "s2p2u4", title: "적중예상문제", pages: 11 }
+            ]},
+            { id: "s2p3", title: "03. 방정식과 부등식", pageRange: "약 34쪽", units: [
+                { id: "s2p3u1", title: "01. 일차방정식과 연립방정식", pages: 12 },
+                { id: "s2p3u2", title: "02. 부등식과 이차방정식", pages: 11 },
+                { id: "s2p3u3", title: "적중예상문제", pages: 11 }
+            ]},
+            { id: "s2p4", title: "04. 함수", pageRange: "약 46쪽", units: [
+                { id: "s2p4u1", title: "01. 함수와 일차함수 그래프", pages: 18 },
+                { id: "s2p4u2", title: "02. 일차함수 식과 이차함수", pages: 13 },
+                { id: "s2p4u3", title: "적중예상문제", pages: 15 }
+            ]},
+            { id: "s2p5", title: "05. 기본 도형", pageRange: "약 54쪽", units: [
+                { id: "s2p5u1", title: "01. 기본 도형과 위치 관계", pages: 13 },
+                { id: "s2p5u2", title: "02. 평행선과 삼각형 합동", pages: 8 },
+                { id: "s2p5u3", title: "03. 평면도형과 입체도형", pages: 25 },
+                { id: "s2p5u4", title: "적중예상문제", pages: 8 }
+            ]},
+            { id: "s2p6", title: "06. 도형의 성질과 닮음", pageRange: "약 50쪽", units: [
+                { id: "s2p6u1", title: "01. 삼각형과 사각형의 성질", pages: 19 },
+                { id: "s2p6u2", title: "02. 도형의 닮음과 활용", pages: 13 },
+                { id: "s2p6u3", title: "적중예상문제", pages: 18 }
+            ]},
+            { id: "s2p7", title: "07. 피타고라스와 삼각비", pageRange: "약 32쪽", units: [
+                { id: "s2p7u1", title: "01. 피타고라스 정리", pages: 7 },
+                { id: "s2p7u2", title: "02. 삼각비와 활용", pages: 13 },
+                { id: "s2p7u3", title: "적중예상문제", pages: 12 }
+            ]},
+            { id: "s2p8", title: "08. 원의 성질 / 확률", pageRange: "약 60쪽", units: [
+                { id: "s2p8u1", title: "01. 현, 호, 원주각", pages: 15 },
+                { id: "s2p8u2", title: "02. 자료 정리와 확률", pages: 15 },
+                { id: "s2p8u3", title: "적중예상문제 (원/확률)", pages: 23 }
+            ]}
+        ]
+    },
+    {
+        id: "sub3", name: "영어",
+        parts: [
+            { id: "s3p1", title: "PART 01 어휘 솔루션", pageRange: "p.2~61", units: [
+                { id: "s3p1u1", title: "01 단어", pages: 41 },
+                { id: "s3p1u2", title: "02 숙어", pages: 9 },
+                { id: "s3p1u3", title: "기출문제 체크", pages: 10 }
+            ]},
+            { id: "s3p2", title: "PART 02 문법 솔루션", pageRange: "p.62~171", units: [
+                { id: "s3p2u1", title: "01 기초편", pages: 20 },
+                { id: "s3p2u2", title: "02 품사편", pages: 33 },
+                { id: "s3p2u3", title: "03 동사편", pages: 30 },
+                { id: "s3p2u4", title: "04 심화편", pages: 8 },
+                { id: "s3p2u5", title: "기출문제 체크", pages: 19 }
+            ]},
+            { id: "s3p3", title: "PART 03 생활영어", pageRange: "p.172~217", units: [
+                { id: "s3p3u1", title: "01 필수 대화 40개", pages: 16 },
+                { id: "s3p3u2", title: "기출문제 체크", pages: 30 }
+            ]},
+            { id: "s3p4", title: "PART 04 독해 / 모의고사", pageRange: "p.218~", units: [
+                { id: "s3p4u1", title: "독해 기출문제 체크", pages: 38 },
+                { id: "s3p4u2", title: "제1~2회 모의고사", pages: 14 },
+                { id: "s3p4u3", title: "최신 기출문제", pages: 15 }
+            ]}
+        ]
+    },
+    {
+        id: "sub4", name: "사회(역사)",
+        parts: [
+            { id: "s4p1", title: "사회 1 (지리/일반사회)", pageRange: "p.4~97", units: [
+                { id: "s4p1u1", title: "01~04 세계와 기후, 문화", pages: 32 },
+                { id: "s4p1u2", title: "05~08 자연재해, 자원, 사회생활", pages: 32 },
+                { id: "s4p1u3", title: "09~12 민주주의, 법, 사회변동", pages: 30 }
+            ]},
+            { id: "s4p2", title: "사회 2 (인권/경제)", pageRange: "p.98~199", units: [
+                { id: "s4p2u1", title: "01~04 인권, 헌법, 시장경제", pages: 33 },
+                { id: "s4p2u2", title: "05~08 국제거래, 인구, 도시", pages: 35 },
+                { id: "s4p2u3", title: "09~12 글로벌 환경과 세계", pages: 34 }
+            ]},
+            { id: "s4p3", title: "역사 (선사~고려)", pageRange: "p.200~257", units: [
+                { id: "s4p3u1", title: "01 선사 문화와 고대 국가", pages: 24 },
+                { id: "s4p3u2", title: "02 남북국 시대", pages: 16 },
+                { id: "s4p3u3", title: "03 고려의 성립과 변천", pages: 18 }
+            ]},
+            { id: "s4p4", title: "역사 (조선~근현대)", pageRange: "p.258~330", units: [
+                { id: "s4p4u1", title: "04~05 조선의 성립과 변동", pages: 30 },
+                { id: "s4p4u2", title: "06 근·현대 사회의 전개", pages: 28 },
+                { id: "s4p4u3", title: "최신 기출문제", pages: 20 }
+            ]}
+        ]
+    },
+    {
+        id: "sub5", name: "과학",
+        parts: [
+            { id: "s5p1", title: "제1편 물리", pageRange: "p.4~101", units: [
+                { id: "s5p1u1", title: "01 여러 가지 힘 / 빛과 파동", pages: 26 },
+                { id: "s5p1u2", title: "02 전기와 자기 / 열과 생활", pages: 32 },
+                { id: "s5p1u3", title: "03 운동과 에너지 전환", pages: 31 }
+            ]},
+            { id: "s5p2", title: "제2편 화학", pageRange: "p.102~175", units: [
+                { id: "s5p2u1", title: "01 기체의 성질 / 상태 변화", pages: 28 },
+                { id: "s5p2u2", title: "02 물질의 구성 / 물질의 특성", pages: 30 },
+                { id: "s5p2u3", title: "03 화학 반응의 규칙", pages: 16 }
+            ]},
+            { id: "s5p3", title: "제3편 생명과학", pageRange: "p.176~263", units: [
+                { id: "s5p3u1", title: "01 생물의 다양성 / 식물 에너지", pages: 26 },
+                { id: "s5p3u2", title: "02 동물과 에너지 / 자극과 반응", pages: 42 },
+                { id: "s5p3u3", title: "03 생식과 유전", pages: 20 }
+            ]},
+            { id: "s5p4", title: "제4편 지구과학", pageRange: "p.264~359", units: [
+                { id: "s5p4u1", title: "01 지권의 변화 / 태양계", pages: 42 },
+                { id: "s5p4u2", title: "02 수권 / 기권과 날씨 / 별과 우주", pages: 50 },
+                { id: "s5p4u3", title: "최신 기출문제", pages: 20 }
+            ]}
+        ]
+    },
+    {
+        id: "sub6", name: "도덕",
+        parts: [
+            { id: "s6p1", title: "PART 01~03 자신/타인/사회", pageRange: "p.2~119", units: [
+                { id: "s6p1u1", title: "01 자신과의 관계", pages: 52 },
+                { id: "s6p1u2", title: "02 타인과의 관계 (1)", pages: 36 },
+                { id: "s6p1u3", title: "03 사회·공동체 (1)", pages: 30 }
+            ]},
+            { id: "s6p2", title: "PART 04~06 타인/사회/자연", pageRange: "p.120~217", units: [
+                { id: "s6p2u1", title: "04 타인과의 관계 (2)", pages: 26 },
+                { id: "s6p2u2", title: "05 사회·공동체 (2)", pages: 40 },
+                { id: "s6p2u3", title: "06 자연·초월과의 관계", pages: 32 }
+            ]},
+            { id: "s6p3", title: "PART 07~08 실전/기출", pageRange: "p.218~", units: [
+                { id: "s6p3u1", title: "제1~2회 실전모의고사", pages: 10 },
+                { id: "s6p3u2", title: "2026년 제1회 기출문제", pages: 15 }
+            ]}
+        ]
+    },
+    {
+        id: "sub7", name: "주식(투무따)",
+        parts: [
+            { id: "s7p1", title: "첫째/둘째마당: 감잡기/매매", pageRange: "p.28~117", units: [
+                { id: "s7p1u1", title: "주식이란? 종가지수, 5계명", pages: 52 },
+                { id: "s7p1u2", title: "계좌, MTS, 매매주문", pages: 38 }
+            ]},
+            { id: "s7p2", title: "셋째마당: 기본적 분석(가치투자)", pageRange: "p.118~240", units: [
+                { id: "s7p2u1", title: "가치투자, ROE, PER, PBR", pages: 45 },
+                { id: "s7p2u2", title: "우량주, 주도주, 테마주", pages: 26 },
+                { id: "s7p2u3", title: "정보수집, 포트폴리오, ETF", pages: 38 }
+            ]},
+            { id: "s7p3", title: "넷째마당: 기술적 분석(차트)", pageRange: "p.241~351", units: [
+                { id: "s7p3u1", title: "봉차트, 추세선, 이동평균선", pages: 45 },
+                { id: "s7p3u2", title: "패턴분석, 거래량, 보조지표", pages: 48 },
+                { id: "s7p3u3", title: "매수/매도 5대 원칙", pages: 18 }
+            ]},
+            { id: "s7p4", title: "다섯째마당: 배당/장기/파생", pageRange: "p.352~", units: [
+                { id: "s7p4u1", title: "배당투자, 장기투자(해자)", pages: 24 },
+                { id: "s7p4u2", title: "파생상품, 선물, 옵션 거래", pages: 50 }
+            ]}
+        ]
+    }
+];
+
+/**
+ * 2. State Management
+ */
+const STORAGE_KEY = 'eden_dashboard_state_v2';
+let appState = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+let currentSubjectIndex = 1; // Default: 수학 (Index 1)
+
+// Initialize missing states
+curriculumData.forEach(sub => {
+    sub.parts.forEach(part => {
+        part.units.forEach(unit => {
+            if (!appState[unit.id]) {
+                appState[unit.id] = { checked: false, locked: false, light: 'none' };
+            }
+        });
+    });
+});
+
+function saveState() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+    calculateAndRenderStats();
+}
+
+/**
+ * 3. Core Logic & Rendering
+ */
+function initApp() {
+    try {
+        renderTabs();
+        renderSubjectContent();
+        calculateAndRenderStats();
+    } catch (e) {
+        console.error("Initialization Error:", e);
+        alert("데이터를 불러오는 중 문제가 발생했습니다.");
+    }
+}
+
+function calculateAndRenderStats() {
+    let totalUnits = 0, doneUnits = 0, totalPages = 0, donePages = 0, totalParts = 0, doneParts = 0;
+    let currSub = curriculumData[currentSubjectIndex];
+    let currSubTotalUnits = 0, currSubDoneUnits = 0;
+
+    curriculumData.forEach(sub => {
+        sub.parts.forEach(part => {
+            totalParts++;
+            let partDoneUnits = 0;
+            part.units.forEach(unit => {
+                totalUnits++;
+                totalPages += unit.pages;
+                
+                if (sub.id === currSub.id) currSubTotalUnits++;
+                
+                if (appState[unit.id].checked) {
+                    doneUnits++;
+                    partDoneUnits++;
+                    donePages += unit.pages;
+                    if (sub.id === currSub.id) currSubDoneUnits++;
+                }
+            });
+            if (partDoneUnits === part.units.length && part.units.length > 0) {
+                doneParts++;
+            }
+        });
+    });
+
+    // Update DOM Global Stats
+    const globalPct = totalUnits === 0 ? 0 : Math.round((doneUnits / totalUnits) * 100);
+    document.getElementById('globalPctText').innerText = `${globalPct}%`;
+    document.getElementById('globalProgressBar').style.width = `${globalPct}%`;
+    
+    document.getElementById('statUnits').innerHTML = `${doneUnits} <span class="text-sm text-gray-500 font-normal">/ ${totalUnits}개</span>`;
+    document.getElementById('statPages').innerHTML = `${donePages} <span class="text-sm text-gray-500 font-normal">쪽 돌파</span>`;
+    document.getElementById('statParts').innerHTML = `${doneParts} <span class="text-sm text-gray-500 font-normal">/ ${totalParts}단원</span>`;
+    
+    // Update DOM Current Subject Stats
+    const currPct = currSubTotalUnits === 0 ? 0 : Math.round((currSubDoneUnits / currSubTotalUnits) * 100);
+    document.getElementById('statCurrentSubject').innerText = currSub.name;
+    document.getElementById('statCurrentProgress').innerText = `진도율 ${currPct}% (${currSubDoneUnits}/${currSubTotalUnits})`;
+    
+    document.getElementById('currentSubjectTitle').innerHTML = `${currSub.name} <span class="bg-green-100 text-green-800 text-sm px-3 py-1 rounded-full font-medium" id="currentSubjectBadge">진도율 ${currPct}% (${currSubDoneUnits}/${currSubTotalUnits})</span>`;
+}
+
+function renderTabs() {
+    const container = document.getElementById('tabsContainer');
+    let html = '';
+    
+    curriculumData.forEach((sub, index) => {
+        // Calculate sub progress for tab badge
+        let total = 0, done = 0;
+        sub.parts.forEach(p => p.units.forEach(u => {
+            total++;
+            if(appState[u.id].checked) done++;
+        }));
+        const pct = total === 0 ? 0 : Math.round((done/total)*100);
+        
+        const isActive = index === currentSubjectIndex;
+        const baseClass = "flex items-center gap-2 px-5 py-2.5 rounded-full border cursor-pointer whitespace-nowrap transition-all text-sm font-semibold ";
+        const activeClass = isActive ? "bg-gray-800 text-white border-gray-800 shadow-md" : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50";
+        const badgeClass = isActive ? "bg-green-500 text-white" : "bg-gray-100 text-gray-500";
+
+        html += `
+            <div class="${baseClass} ${activeClass}" onclick="switchSubject(${index})">
+                ${sub.name} <span class="${badgeClass} text-[10px] px-2 py-0.5 rounded-full">${pct}%</span>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+function switchSubject(index) {
+    currentSubjectIndex = index;
+    renderTabs();
+    renderSubjectContent();
+    calculateAndRenderStats();
+}
+
+function renderSubjectContent() {
+    const container = document.getElementById('accordionsContainer');
+    const subject = curriculumData[currentSubjectIndex];
+    let html = '';
+
+    subject.parts.forEach(part => {
+        let partTotalUnits = part.units.length;
+        let partDoneUnits = 0;
+        
+        let unitsHtml = '';
+        part.units.forEach(unit => {
+            const state = appState[unit.id];
+            if (state.checked) partDoneUnits++;
+            
+            // Build Traffic Light HTML
+            const lightG = state.light === 'g' ? 'bg-green-500 text-white border-green-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-white text-gray-400 border-gray-200 hover:bg-gray-50';
+            const lightY = state.light === 'y' ? 'bg-yellow-400 text-white border-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.5)]' : 'bg-white text-gray-400 border-gray-200 hover:bg-gray-50';
+            const lightR = state.light === 'r' ? 'bg-red-500 text-white border-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]' : 'bg-white text-gray-400 border-gray-200 hover:bg-gray-50';
+
+            unitsHtml += `
+                <div class="border rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white hover:border-green-300 transition-colors ${state.locked ? 'opacity-80 bg-gray-50' : ''}">
+                    
+                    <!-- Left: Checkbox & Title -->
+                    <div class="flex items-center gap-4 flex-1">
+                        <div onclick="toggleUnit('${unit.id}', '${part.id}')" 
+                             class="circle-check w-7 h-7 rounded-full border-2 flex items-center justify-center cursor-pointer flex-shrink-0 ${state.checked ? 'checked' : 'border-gray-300 bg-white hover:border-green-400'}">
+                            ${state.checked ? '<i class="fa-solid fa-check text-white text-sm"></i>' : ''}
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-gray-800 text-[15px] ${state.checked ? 'text-gray-400 line-through' : ''}">${unit.title}</h4>
+                            <p class="text-xs text-green-600 font-medium mt-0.5">약 ${unit.pages}쪽</p>
+                        </div>
+                    </div>
+
+                    <!-- Right: Controls -->
+                    <div class="flex items-center gap-3">
+                        <!-- Traffic Lights (Meta-cognition) -->
+                        <div class="flex bg-gray-100 p-1 rounded-lg gap-1 border border-gray-200">
+                            <button onclick="setLight('${unit.id}', 'g')" class="w-7 h-7 rounded text-xs border font-bold transition-all ${lightG}" title="완벽">상</button>
+                            <button onclick="setLight('${unit.id}', 'y')" class="w-7 h-7 rounded text-xs border font-bold transition-all ${lightY}" title="점검">중</button>
+                            <button onclick="setLight('${unit.id}', 'r')" class="w-7 h-7 rounded text-xs border font-bold transition-all ${lightR}" title="복습">하</button>
+                        </div>
+                        
+                        <!-- Lock Button -->
+                        <button onclick="toggleLock('${unit.id}')" class="w-9 h-9 rounded-lg border flex items-center justify-center transition-colors ${state.locked ? 'bg-red-50 text-red-500 border-red-200' : 'bg-white text-gray-400 border-gray-200 hover:bg-gray-50'}">
+                            <i class="fa-solid ${state.locked ? 'fa-lock' : 'fa-unlock'}"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+
+        const partPct = partTotalUnits === 0 ? 0 : Math.round((partDoneUnits / partTotalUnits) * 100);
+
+        html += `
+            <div class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden mb-2">
+                <!-- Accordion Header -->
+                <div class="p-5 flex items-center justify-between cursor-pointer hover:bg-gray-50 transition select-none" onclick="toggleAccordion('part-body-${part.id}', 'part-icon-${part.id}')">
+                    <div class="flex items-center gap-3 flex-1">
+                        <i id="part-icon-${part.id}" class="fa-solid fa-chevron-down text-gray-400 transition-transform duration-300"></i>
+                        <div>
+                            <h3 class="font-bold text-gray-800 text-lg">${part.title} <span class="text-sm text-gray-500 font-normal ml-1">(${part.pageRange})</span></h3>
+                            <p class="text-xs text-gray-400 mt-1">소단원 ${partDoneUnits} / ${partTotalUnits} 완료 • 진도율 ${partPct}%</p>
+                        </div>
+                    </div>
+                    <div class="w-24 md:w-48 bg-gray-100 rounded-full h-1.5 ml-4">
+                        <div class="bg-green-500 h-1.5 rounded-full transition-all duration-500" style="width: ${partPct}%"></div>
+                    </div>
+                </div>
+                
+                <!-- Accordion Body -->
+                <div id="part-body-${part.id}" class="accordion-content open bg-gray-50 border-t border-gray-100">
+                    <div class="p-5 flex flex-col gap-3">
+                        ${unitsHtml}
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+}
+
+/**
+ * 4. Interactions
+ */
+function toggleAccordion(bodyId, iconId) {
+    const body = document.getElementById(bodyId);
+    const icon = document.getElementById(iconId);
+    if(body.classList.contains('open')) {
+        body.classList.remove('open');
+        icon.style.transform = 'rotate(-90deg)';
+    } else {
+        body.classList.add('open');
+        icon.style.transform = 'rotate(0deg)';
+    }
+}
+
+function toggleAllAccordions(expand) {
+    const bodies = document.querySelectorAll('.accordion-content');
+    const icons = document.querySelectorAll('.fa-chevron-down');
+    
+    bodies.forEach(b => {
+        if(expand) b.classList.add('open');
+        else b.classList.remove('open');
+    });
+    
+    icons.forEach(i => {
+        if(expand) i.style.transform = 'rotate(0deg)';
+        else i.style.transform = 'rotate(-90deg)';
+    });
+}
+
+function toggleUnit(unitId, partId) {
+    const state = appState[unitId];
+    if(state.locked) {
+        alert("🔒 잠금 상태입니다. 잠금을 해제한 후 변경해주세요.");
+        return;
+    }
+    
+    state.checked = !state.checked;
+    saveState();
+    renderSubjectContent(); // Re-render to update UI and Progress bars
+}
+
+function toggleLock(unitId) {
+    appState[unitId].locked = !appState[unitId].locked;
+    saveState();
+    renderSubjectContent();
+}
+
+function setLight(unitId, color) {
+    const state = appState[unitId];
+    if(state.locked) return;
+    
+    // Toggle off if clicking the same color
+    if(state.light === color) {
+        state.light = 'none';
+    } else {
+        state.light = color;
+    }
+    saveState();
+    renderSubjectContent();
+}
+
+/**
+ * 5. TSV Export
+ */
+function exportToTSV() {
+    let tsv = "과목\t대단원\t소단원\t쪽수\t상태\t이해도\n";
+    
+    curriculumData.forEach(sub => {
+        sub.parts.forEach(part => {
+            part.units.forEach(unit => {
+                const s = appState[unit.id];
+                const status = s.checked ? "완료" : "미완료";
+                let lightStr = "-";
+                if(s.light === 'g') lightStr = "상";
+                else if(s.light === 'y') lightStr = "중";
+                else if(s.light === 'r') lightStr = "하";
+                
+                tsv += `${sub.name}\t${part.title}\t${unit.title}\t${unit.pages}\t${status}\t${lightStr}\n`;
+            });
+        });
+    });
+
+    // Create a temporary textarea to copy
+    const textarea = document.createElement('textarea');
+    textarea.value = tsv;
+    document.body.appendChild(textarea);
+    textarea.select();
+    try {
+        document.execCommand('copy');
+        alert("✅ 전체 진도 데이터가 복사되었습니다!\n구글 시트에 Ctrl+V로 붙여넣으세요.");
+    } catch (err) {
+        alert("복사에 실패했습니다.");
+    }
+    document.body.removeChild(textarea);
+}
+
+// Boot up
+window.onload = initApp;
+</script>
+</body>
+</html>
